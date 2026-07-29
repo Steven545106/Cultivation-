@@ -141,6 +141,10 @@ const recipeNotes = {
 };
 
 let state = loadState();
+if (!difficulties[state.difficulty] || (state.difficultyDefaultVersion || 0) < 1) {
+  state.difficulty = "easy";
+  state.difficultyDefaultVersion = 1;
+}
 state.techniques = state.techniques || {};
 state.pets = state.pets || {};
 state.activePet = state.activePet || "";
@@ -171,6 +175,7 @@ function createState() {
   });
   return {
     difficulty: "easy",
+    difficultyDefaultVersion: 1,
     realmIndex: 0,
     cultivation: 0,
     atk: 12,
