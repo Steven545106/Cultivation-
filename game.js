@@ -170,7 +170,7 @@ function createState() {
     inventory[recipe.name] = 0;
   });
   return {
-    difficulty: "normal",
+    difficulty: "easy",
     realmIndex: 0,
     cultivation: 0,
     atk: 12,
