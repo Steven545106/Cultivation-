@@ -357,8 +357,9 @@ function showFloat(text) {
   const el = $("floatingText");
   el.textContent = text;
   el.classList.remove("show");
-  void el.offsetWidth;
-  el.classList.add("show");
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => el.classList.add("show"));
+  });
 }
 
 function playActionEffect(type, duration = 1300) {
@@ -368,9 +369,12 @@ function playActionEffect(type, duration = 1300) {
   const classes = ["absorbing", "alchemy-effect", "dual-effect", "technique-effect", "pet-effect"];
   classes.forEach((className) => stage.classList.remove(className));
   burst.className = "action-burst";
-  void stage.offsetWidth;
-  stage.classList.add(type);
-  burst.classList.add("active", type);
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      stage.classList.add(type);
+      burst.classList.add("active", type);
+    });
+  });
   window.clearTimeout(playActionEffect.timer);
   playActionEffect.timer = window.setTimeout(() => {
     stage.classList.remove(type);
@@ -394,9 +398,10 @@ function playBreakthroughEffect() {
   window.clearTimeout(playBreakthroughEffect.timer);
   effect.classList.remove("show");
   image.removeAttribute("src");
-  void effect.offsetWidth;
-  image.src = `${image.dataset.src}?play=${Date.now()}`;
-  effect.classList.add("show");
+  window.requestAnimationFrame(() => {
+    image.src = image.dataset.src;
+    effect.classList.add("show");
+  });
   playBreakthroughEffect.timer = window.setTimeout(() => {
     effect.classList.remove("show");
     image.removeAttribute("src");
@@ -417,6 +422,15 @@ function playAbsorbEffect() {
 }
 
 function render() {
+  renderStats();
+  renderPills();
+  renderPartners();
+  renderTechniques();
+  renderPets();
+  renderBag();
+}
+
+function renderStats() {
   const realm = getRealm();
   const need = getNeed();
   const pct = Math.min(100, (state.cultivation / need) * 100);
@@ -444,11 +458,6 @@ function render() {
     $("activePetSigil").textContent = activePet.sigil;
     $("activePetName").textContent = activePet.name;
   }
-  renderPills();
-  renderPartners();
-  renderTechniques();
-  renderPets();
-  renderBag();
 }
 
 function renderPills() {
@@ -737,7 +746,9 @@ function brew(name) {
   }
   playActionEffect("alchemy-effect", 1200);
   saveState();
-  render();
+  renderStats();
+  renderPills();
+  renderBag();
 }
 
 function usePill(name) {
@@ -810,7 +821,7 @@ async function breakthrough() {
   }
   const tribulationCount = getTribulationCount();
   breakthroughInProgress = true;
-  render();
+  renderStats();
   if (realm.qty > 0) state.inventory[realm.material] -= realm.qty;
   if (tribulationCount > 0) {
     const survived = await runTribulation(tribulationCount);
@@ -891,5 +902,5 @@ setInterval(() => {
   state.currentHp = Math.min(getMaxHp(), state.currentHp + getMaxHp() / 120);
   playAbsorbEffect();
   saveState();
-  render();
+  renderStats();
 }, 5000);
