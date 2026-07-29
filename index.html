@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>一念放置修仙</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="game-shell">
+      <section id="gameScreen" class="screen game-screen">
+        <div class="bg-layer"></div>
+        <div class="mist mist-a"></div>
+        <div class="mist mist-b"></div>
+        <div class="ambient-qi" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div id="breakthroughEffect" class="breakthrough-effect" aria-hidden="true">
+          <img data-src="assets/breakthrough.gif" alt="">
+        </div>
+        <div id="tribulationScene" class="tribulation-scene" aria-live="polite">
+          <div class="tribulation-clouds"></div>
+          <div class="lightning lightning-left"></div>
+          <div class="lightning lightning-center"></div>
+          <div class="lightning lightning-right"></div>
+          <div class="tribulation-caption">
+            <strong id="tribulationTitle">天劫降臨</strong>
+            <span id="tribulationProgress"></span>
+          </div>
+        </div>
+
+        <header class="topbar glass">
+          <div>
+            <p id="playerName" class="small-label">本機修士</p>
+            <h2 id="realmTitle">凝氣一層</h2>
+          </div>
+          <div class="cultivation-meter">
+            <div class="meter-info">
+              <span>修為</span>
+              <strong id="cultivationText">0 / 100</strong>
+            </div>
+            <div class="meter-track">
+              <div id="cultivationBar" class="meter-fill"></div>
+            </div>
+          </div>
+          <div class="resource-strip">
+            <span>攻擊 <b id="atkValue">12</b></span>
+            <span>防禦 <b id="defValue">8</b></span>
+            <span>血量 <b id="hpValue">120</b></span>
+            <span>幸運 <b id="luckValue">5</b></span>
+          </div>
+          <button id="guideBtn" class="guide-btn" type="button" title="開啟功法與丹方說明" aria-haspopup="dialog">
+            <span aria-hidden="true">典</span>
+            <span>典籍</span>
+          </button>
+        </header>
+
+        <div class="main-stage">
+          <aside class="left-panel glass">
+            <h3>修煉狀態</h3>
+            <div class="stat-line">
+              <span>難度</span>
+              <b id="difficultyLabel">中等</b>
+            </div>
+            <div class="stat-line">
+              <span>每分鐘修為</span>
+              <b id="rateValue">0</b>
+            </div>
+            <div class="stat-line">
+              <span>突破成功率</span>
+              <b id="successRate">60%</b>
+            </div>
+            <div class="stat-line">
+              <span>天劫總減傷</span>
+              <b id="damageReductionValue">0%</b>
+            </div>
+            <div class="stat-line">
+              <span>下次突破</span>
+              <b id="tribulationInfo">無天劫</b>
+            </div>
+            <div id="offlineNotice" class="notice hidden"></div>
+            <div class="auto-cultivation-status" role="status">
+              <span class="cultivation-pulse" aria-hidden="true"></span>
+              <div>
+                <strong>自動吸收中</strong>
+                <small>線上、離線皆會持續累積修為</small>
+              </div>
+            </div>
+            <button id="breakthroughBtn" class="secondary-btn">嘗試突破</button>
+          </aside>
+
+          <section class="character-stage">
+            <div class="stage-aura" aria-hidden="true"></div>
+            <div class="qi-orbit orbit-outer" aria-hidden="true"></div>
+            <div class="qi-orbit orbit-inner" aria-hidden="true"></div>
+            <div class="spirit-ring ring-one"></div>
+            <div class="spirit-ring ring-two"></div>
+            <img id="absorbEffect" class="absorb-effect" src="assets/cultivation.gif" alt="天地吸收修為動畫">
+            <div id="actionBurst" class="action-burst" aria-hidden="true"></div>
+            <div id="floatingText" class="floating-text"></div>
+            <div id="activePetBadge" class="active-pet-badge hidden">
+              <span id="activePetSigil" aria-hidden="true">王</span>
+              <div>
+                <small>同行靈寵</small>
+                <strong id="activePetName">鐵蛋</strong>
+              </div>
+            </div>
+          </section>
+
+          <aside class="right-panel glass">
+            <h3 id="tabTitle">煉丹房</h3>
+            <div class="tab-content active" id="alchemyPanel">
+              <div class="cauldron">
+                <div class="flame"></div>
+              </div>
+              <div id="pillList" class="list"></div>
+            </div>
+            <div class="tab-content" id="partnerPanel">
+              <div id="partnerList" class="list"></div>
+            </div>
+            <div class="tab-content" id="techniquePanel">
+              <div id="techniqueList" class="list"></div>
+            </div>
+            <div class="tab-content" id="petPanel">
+              <div id="petList" class="list"></div>
+            </div>
+            <div class="tab-content" id="bagPanel">
+              <div id="bagList" class="list"></div>
+            </div>
+          </aside>
+        </div>
+
+        <nav class="bottom-nav glass" aria-label="遊戲功能">
+          <button class="nav-btn active" data-tab="alchemyPanel">煉丹</button>
+          <button class="nav-btn" data-tab="partnerPanel">雙修</button>
+          <button class="nav-btn" data-tab="techniquePanel">功法</button>
+          <button class="nav-btn" data-tab="petPanel">靈寵</button>
+          <button class="nav-btn" data-tab="bagPanel">背包</button>
+        </nav>
+
+        <div id="guideModal" class="guide-modal hidden" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+          <button class="guide-backdrop" type="button" data-close-guide aria-label="關閉修行典籍"></button>
+          <section class="guide-sheet">
+            <header class="guide-header">
+              <div>
+                <p class="small-label">白小純修行錄</p>
+                <h2 id="guideTitle">修行典籍</h2>
+              </div>
+              <button id="guideCloseBtn" class="guide-close-btn" type="button" aria-label="關閉">×</button>
+            </header>
+            <div class="guide-tabs" role="tablist" aria-label="典籍分類">
+              <button class="guide-tab active" type="button" data-guide-tab="techniques" role="tab" aria-selected="true">功法說明</button>
+              <button class="guide-tab" type="button" data-guide-tab="recipes" role="tab" aria-selected="false">丹方說明</button>
+              <button class="guide-tab" type="button" data-guide-tab="pets" role="tab" aria-selected="false">靈寵說明</button>
+            </div>
+            <div id="guideContent" class="guide-content"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>
