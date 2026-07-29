@@ -88,6 +88,7 @@ const pets = [
     sigil: "王",
     role: "王獸戰寵",
     unlock: 10,
+    initialRealm: 0,
     maxLevel: 5,
     bondCost: 700,
     trainCost: 420,
@@ -101,6 +102,7 @@ const pets = [
     sigil: "龜",
     role: "機緣靈伴",
     unlock: 14,
+    initialRealm: 14,
     maxLevel: 5,
     bondCost: 1100,
     trainCost: 620,
@@ -115,6 +117,7 @@ const pets = [
     sigil: "龍",
     role: "守護靈獸",
     unlock: 18,
+    initialRealm: 18,
     maxLevel: 5,
     bondCost: 1800,
     trainCost: 900,
@@ -148,6 +151,10 @@ if (!difficulties[state.difficulty] || (state.difficultyDefaultVersion || 0) < 1
 state.techniques = state.techniques || {};
 state.pets = state.pets || {};
 state.activePet = state.activePet || "";
+pets.forEach((pet) => {
+  const record = state.pets[pet.name];
+  if (record?.owned && !Number.isInteger(record.realmIndex)) record.realmIndex = pet.initialRealm;
+});
 if (state.techniques["不死長生功"]) {
   const legacyLevel = state.techniques["不死長生功"];
   state.techniques["不死長生功・不死皮"] = Math.max(state.techniques["不死長生功・不死皮"] || 0, Math.min(3, legacyLevel));
@@ -249,7 +256,27 @@ function getTechniqueBonus(property) {
 }
 
 function getPetRecord(name) {
-  return state.pets?.[name] || { owned: false, level: 0 };
+  const pet = pets.find((item) => item.name === name);
+  const record = state.pets?.[name] || { owned: false, level: 0 };
+  return {
+    ...record,
+    realmIndex: Number.isInteger(record.realmIndex) ? record.realmIndex : pet?.initialRealm || 0,
+  };
+}
+
+function getPetRealmName(pet, record = getPetRecord(pet.name)) {
+  if (pet.name === "鐵蛋" && record.realmIndex === 0) return "靈氣一層";
+  return realms[record.realmIndex]?.name || realms[realms.length - 1].name;
+}
+
+function getPetBreakthroughCost(pet) {
+  const record = getPetRecord(pet.name);
+  const realm = realms[Math.min(record.realmIndex, realms.length - 1)];
+  return Math.ceil(realm.need * difficulties[state.difficulty].cost * 3);
+}
+
+function getPetBreakthroughChance() {
+  return Math.min(85, Math.max(50, getSuccessRate() - 18));
 }
 
 function getPetBonus(property) {
@@ -257,7 +284,8 @@ function getPetBonus(property) {
   if (!pet || state.realmIndex < pet.unlock) return 0;
   const record = getPetRecord(pet.name);
   if (!record.owned) return 0;
-  return (pet[property] || 0) * record.level;
+  const realmSteps = Math.max(0, record.realmIndex - pet.initialRealm);
+  return (pet[property] || 0) * record.level * (1 + realmSteps * 0.05);
 }
 
 function getEffectiveLuck() {
@@ -531,12 +559,17 @@ function renderPets() {
     const record = getPetRecord(pet.name);
     const active = record.owned && state.activePet === pet.name;
     const maxed = record.level >= pet.maxLevel;
+    const petRealmMaxed = record.realmIndex >= realms.length - 1;
+    const waitingForPlayer = record.realmIndex >= state.realmIndex;
+    const canBreakthrough = record.owned && !petRealmMaxed && !waitingForPlayer;
+    const realmBonus = Math.max(0, record.realmIndex - pet.initialRealm) * 5;
     return `
       <article class="item pet-card ${unlocked ? "" : "locked"} ${active ? "active" : ""}">
         <div class="pet-heading">
           <span class="pet-sigil" aria-hidden="true">${pet.sigil}</span>
           <div>
             <div class="item-title"><span>${pet.name}</span><span>${record.owned ? `${record.level} / ${pet.maxLevel} 級` : pet.role}</span></div>
+            <p>境界：${getPetRealmName(pet, record)}${realmBonus > 0 ? `・同行效果 +${realmBonus}%` : ""}</p>
             <p>${pet.effect}</p>
           </div>
         </div>
@@ -548,6 +581,9 @@ function renderPets() {
                 ? `<button data-action="bond-pet" data-name="${pet.name}">締結・${pet.bondCost} 修為</button>`
                 : `
                   <button data-action="train-pet" data-name="${pet.name}" ${maxed ? "disabled" : ""}>${maxed ? "培養圓滿" : `培養・${getPetTrainCost(pet)} 修為`}</button>
+                  <button data-action="breakthrough-pet" data-name="${pet.name}" ${canBreakthrough ? "" : "disabled"}>
+                    ${petRealmMaxed ? "境界已達上限" : waitingForPlayer ? "需人物先突破" : `靈寵突破・${getPetBreakthroughCost(pet)} 修為`}
+                  </button>
                   <button data-action="activate-pet" data-name="${pet.name}" ${active ? "disabled" : ""}>${active ? "同行中" : "設為同行"}</button>
                 `
           }
@@ -587,11 +623,13 @@ function renderGuide(tab = activeGuideTab) {
         <article class="guide-entry ${unlocked ? "" : "locked"}">
           <header>
             <h3>${pet.name}・${pet.role}</h3>
-            <span>${record.owned ? `第 ${record.level} / ${pet.maxLevel} 級` : unlocked ? "可締結" : "尚未解鎖"}</span>
+            <span>${record.owned ? `${getPetRealmName(pet, record)}・第 ${record.level} / ${pet.maxLevel} 級` : unlocked ? "可締結" : "尚未解鎖"}</span>
           </header>
           <p>${pet.lore}</p>
           <div class="guide-meta">
             <span><b>同行效果</b>${pet.effect}</span>
+            <span><b>初始境界</b>${getPetRealmName(pet, { realmIndex: pet.initialRealm })}</span>
+            <span><b>突破規則</b>成本為人物同階 3 倍，成功率 ${getPetBreakthroughChance()}%，且不能超過人物境界</span>
             <span><b>締結消耗</b>${pet.bondCost.toLocaleString()} 修為</span>
             <span><b>解鎖</b>${realms[pet.unlock]?.name || "後續境界"}</span>
           </div>
@@ -668,7 +706,7 @@ function bondPet(name) {
   }
   const oldMaxHp = getMaxHp();
   state.cultivation -= pet.bondCost;
-  state.pets[name] = { owned: true, level: 1 };
+  state.pets[name] = { owned: true, level: 1, realmIndex: pet.initialRealm };
   if (!state.activePet) state.activePet = name;
   state.currentHp = Math.min(getMaxHp(), state.currentHp + Math.max(0, getMaxHp() - oldMaxHp));
   playActionEffect("pet-effect", 1500);
@@ -694,6 +732,41 @@ function trainPet(name) {
   state.currentHp = Math.min(getMaxHp(), state.currentHp + Math.max(0, getMaxHp() - oldMaxHp));
   playActionEffect("pet-effect", 1400);
   showFloat(`${name} 提升至 ${record.level} 級`);
+  saveState();
+  render();
+}
+
+function breakthroughPet(name) {
+  const pet = pets.find((item) => item.name === name);
+  const record = getPetRecord(name);
+  if (!pet || !record.owned) return;
+  if (record.realmIndex >= realms.length - 1) {
+    showFloat(`${name} 已達目前最高境界`);
+    return;
+  }
+  if (record.realmIndex >= state.realmIndex) {
+    showFloat("靈寵境界不能超過人物境界");
+    return;
+  }
+  const cost = getPetBreakthroughCost(pet);
+  if (state.cultivation < cost) {
+    showFloat(`靈寵突破修為不足，還差 ${Math.ceil(cost - state.cultivation).toLocaleString()}`);
+    return;
+  }
+  const oldMaxHp = getMaxHp();
+  const chance = getPetBreakthroughChance();
+  if (Math.random() * 100 < chance) {
+    state.cultivation -= cost;
+    record.realmIndex += 1;
+    state.pets[name] = record;
+    state.currentHp = Math.min(getMaxHp(), state.currentHp + Math.max(0, getMaxHp() - oldMaxHp));
+    showFloat(`${name} 突破至 ${getPetRealmName(pet, record)}`);
+  } else {
+    const lost = Math.ceil(cost * 0.25);
+    state.cultivation -= lost;
+    showFloat(`${name} 突破失敗，損耗 ${lost.toLocaleString()} 修為`);
+  }
+  playActionEffect("pet-effect", 1500);
   saveState();
   render();
 }
@@ -891,6 +964,7 @@ document.addEventListener("click", (event) => {
   if (action === "technique") upgradeTechnique(name);
   if (action === "bond-pet") bondPet(name);
   if (action === "train-pet") trainPet(name);
+  if (action === "breakthrough-pet") breakthroughPet(name);
   if (action === "activate-pet") activatePet(name);
   if (event.target.dataset.guideTab) renderGuide(event.target.dataset.guideTab);
   if (event.target.dataset.tab) switchTab(event.target.dataset.tab);
