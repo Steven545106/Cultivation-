@@ -334,20 +334,30 @@ form button {
 }
 
 .floating-text {
-  position: absolute;
-  z-index: 5;
-  top: 22%;
+  pointer-events: none;
+  position: fixed;
+  z-index: 30;
   left: 50%;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  width: max-content;
+  max-width: min(88vw, 480px);
+  padding: 11px 18px;
+  border: 1px solid rgba(246, 216, 116, 0.72);
+  border-radius: 6px;
   color: #fff8d8;
-  font-size: 28px;
+  font-size: 16px;
   font-weight: 900;
-  text-shadow: 0 3px 12px rgba(2, 37, 48, 0.7);
+  text-align: center;
+  background: rgba(5, 35, 41, 0.94);
+  box-shadow: 0 10px 26px rgba(0, 10, 14, 0.36), 0 0 18px rgba(236, 204, 101, 0.18);
   opacity: 0;
-  transform: translate(-50%, 18px);
+  visibility: hidden;
+  transform: translate(-50%, 10px);
 }
 
 .floating-text.show {
-  animation: floatUp 1.2s ease-out;
+  visibility: visible;
+  animation: floatUp 2s ease-out both;
 }
 
 .cauldron {
@@ -531,14 +541,16 @@ form button {
 @keyframes floatUp {
   0% {
     opacity: 0;
-    transform: translate(-50%, 18px);
+    transform: translate(-50%, 10px);
   }
-  18% {
+  10%,
+  78% {
     opacity: 1;
+    transform: translate(-50%, 0);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -48px);
+    transform: translate(-50%, -8px);
   }
 }
 

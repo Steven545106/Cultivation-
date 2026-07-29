@@ -812,7 +812,8 @@ async function breakthrough() {
     return;
   }
   if (state.cultivation < need) {
-    showFloat("修為未滿");
+    const missing = Math.ceil(need - state.cultivation);
+    showFloat(`修為不足，還差 ${missing.toLocaleString()}`);
     return;
   }
   if (realm.qty > 0 && (state.inventory[realm.material] || 0) < realm.qty) {
@@ -822,6 +823,7 @@ async function breakthrough() {
   const tribulationCount = getTribulationCount();
   breakthroughInProgress = true;
   renderStats();
+  showFloat(tribulationCount > 0 ? `引動 ${tribulationCount} 道天劫` : "開始嘗試突破");
   if (realm.qty > 0) state.inventory[realm.material] -= realm.qty;
   if (tribulationCount > 0) {
     const survived = await runTribulation(tribulationCount);
