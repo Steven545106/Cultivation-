@@ -1096,6 +1096,29 @@ body {
   line-height: 1.55;
 }
 
+.dual-partner-name {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.dual-partner-name b {
+  font: inherit;
+}
+
+.dual-partner-portrait {
+  display: block;
+  width: 54px;
+  height: 72px;
+  flex: 0 0 54px;
+  object-fit: contain;
+  object-position: center bottom;
+  filter:
+    drop-shadow(0 5px 7px rgba(0, 8, 12, 0.5))
+    drop-shadow(0 0 8px rgba(236, 139, 183, 0.28));
+}
+
 .character-stage.pet-effect {
   animation: stagePetGlow 1.5s ease-out;
 }
@@ -1125,6 +1148,12 @@ body {
   .active-dual-badge {
     left: 8px;
     bottom: 8px;
+  }
+
+  .dual-partner-portrait {
+    width: 48px;
+    height: 66px;
+    flex-basis: 48px;
   }
 
   .active-pet-sprite {

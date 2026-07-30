@@ -83,7 +83,7 @@ const partners = [
   { name: "宋君婉", unlock: 10, trait: "攻擊與血量", stat: "battle", bonus: 0.04 },
   { name: "公孫婉兒", unlock: 14, trait: "稀有機緣", stat: "luck", bonus: 4 },
   { name: "杜凌菲", unlock: 17, trait: "突破成功率", stat: "break", bonus: 3 },
-  { name: "周紫陌", unlock: 18, trait: "後期戰力", stat: "battle", bonus: 0.08 },
+  { name: "周紫陌", unlock: 18, trait: "後期戰力", stat: "battle", bonus: 0.08, image: "assets/hongchen.gif?v=20260730-7" },
 ];
 
 const techniques = [
@@ -720,9 +720,15 @@ function renderPartners() {
       const atkBonus = Math.round(getDualResonanceBonus("atk", partner.name) * 100);
       const defBonus = Math.round(getDualResonanceBonus("def", partner.name) * 100);
       const hpBonus = Math.round(getDualResonanceBonus("hp", partner.name) * 100);
+      const partnerPortrait = partner.image
+        ? `<img class="dual-partner-portrait" src="${partner.image}" alt="${partner.name}動態角色圖">`
+        : "";
       return `
         <article class="item dual-partner-card ${active ? "active" : ""}">
-          <div class="item-title"><span>${partner.name}</span><span>${active ? "共鳴中" : level}</span></div>
+          <div class="item-title">
+            <span class="dual-partner-name">${partnerPortrait}<b>${partner.name}</b></span>
+            <span>${active ? "共鳴中" : level}</span>
+          </div>
           <p>親密度 ${affection}，特色：${partner.trait}</p>
           <p class="dual-bonus">修煉 +${rateBonus}%・攻擊 +${atkBonus}%・防禦 +${defBonus}%・血量 +${hpBonus}%</p>
           <button data-action="dual" data-name="${partner.name}" ${used ? "disabled" : ""}>${used ? active ? "今日已雙修・共鳴中" : "今日已雙修" : "開始雙修"}</button>
