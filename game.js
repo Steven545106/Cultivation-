@@ -83,7 +83,7 @@ const partners = [
   { name: "宋君婉", unlock: 10, trait: "攻擊與血量", stat: "battle", bonus: 0.04 },
   { name: "公孫婉兒", unlock: 14, trait: "稀有機緣", stat: "luck", bonus: 4 },
   { name: "杜凌菲", unlock: 17, trait: "突破成功率", stat: "break", bonus: 3 },
-  { name: "紅塵女", unlock: 18, trait: "後期戰力", stat: "battle", bonus: 0.08 },
+  { name: "周紫陌", unlock: 18, trait: "後期戰力", stat: "battle", bonus: 0.08 },
 ];
 
 const techniques = [
@@ -223,6 +223,18 @@ if (!difficulties[state.difficulty] || (state.difficultyDefaultVersion || 0) < 1
 state.techniques = state.techniques || {};
 state.pets = state.pets || {};
 state.activePet = state.activePet || "";
+state.affection = state.affection || {};
+state.dualUsed = state.dualUsed || {};
+state.activeDualPartner = state.activeDualPartner || "";
+if (state.affection["紅塵女"] != null) {
+  state.affection["周紫陌"] = Math.max(state.affection["周紫陌"] || 0, state.affection["紅塵女"]);
+  delete state.affection["紅塵女"];
+}
+if (state.dualUsed["紅塵女"]) {
+  state.dualUsed["周紫陌"] = state.dualUsed["周紫陌"] || state.dualUsed["紅塵女"];
+  delete state.dualUsed["紅塵女"];
+}
+if (state.activeDualPartner === "紅塵女") state.activeDualPartner = "周紫陌";
 pets.forEach((pet) => {
   const record = state.pets[pet.name];
   if (record?.owned && !Number.isInteger(record.realmIndex)) record.realmIndex = pet.initialRealm;
@@ -268,6 +280,7 @@ function createState() {
     techniques: {},
     pets: {},
     activePet: "",
+    activeDualPartner: "",
     lastActive: Date.now(),
     createdAt: Date.now(),
   };
@@ -297,17 +310,14 @@ function getNeed() {
 
 function getRate() {
   const difficulty = difficulties[state.difficulty].rate;
-  const partnerRate = partners.reduce((sum, partner) => {
-    const affection = state.affection[partner.name] || 0;
-    return sum + (partner.stat === "rate" && affection >= 100 ? partner.bonus : 0);
-  }, 0);
   const techniqueRate = getTechniqueBonus("rate");
   const petRate = getPetBonus("rate");
+  const dualRate = getDualResonanceBonus("rate");
   const lateRealmAcceleration = state.realmIndex > 18 ? Math.pow(1.18, state.realmIndex - 18) : 1;
   return Math.ceil(
     (24 + state.realmIndex * 9 + getEffectiveLuck() * 0.8)
     * difficulty
-    * (1 + partnerRate + techniqueRate + petRate)
+    * (1 + dualRate + techniqueRate + petRate)
     * lateRealmAcceleration
   );
 }
@@ -393,6 +403,23 @@ function getPetBonus(property) {
   return trainedBonus + getActivePetSkillBonus(property);
 }
 
+function getDualResonanceBonus(property, partnerName = state.activeDualPartner) {
+  const partner = partners.find((item) => item.name === partnerName);
+  if (!partner || state.realmIndex < partner.unlock) return 0;
+  const affection = state.affection[partner.name] || 0;
+  const bondRank = Math.min(4, 1 + Math.floor(affection / 300));
+  const baseBonuses = {
+    rate: 0.1 + (bondRank - 1) * 0.03,
+    atk: 0.06 + (bondRank - 1) * 0.02,
+    def: 0.06 + (bondRank - 1) * 0.02,
+    hp: 0.08 + (bondRank - 1) * 0.025,
+  };
+  let bonus = baseBonuses[property] || 0;
+  if (partner.stat === "rate" && property === "rate") bonus += partner.bonus;
+  if (partner.stat === "battle" && ["atk", "def", "hp"].includes(property)) bonus += partner.bonus;
+  return bonus;
+}
+
 function getEnemyAttackReduction() {
   return Math.min(0.6, getActivePetSkillBonus("enemyAtkReduction"));
 }
@@ -402,19 +429,21 @@ function getRareDropBonus() {
 }
 
 function getEffectiveLuck() {
-  return state.luck + getTechniqueBonus("luck") + getPetBonus("luck");
+  const partner = partners.find((item) => item.name === state.activeDualPartner);
+  const dualLuck = partner?.stat === "luck" ? partner.bonus : 0;
+  return state.luck + dualLuck + getTechniqueBonus("luck") + getPetBonus("luck");
 }
 
 function getMaxHp() {
-  return Math.floor(state.hp * (1 + getTechniqueBonus("hp") + getPetBonus("hp")));
+  return Math.floor(state.hp * (1 + getTechniqueBonus("hp") + getPetBonus("hp") + getDualResonanceBonus("hp")));
 }
 
 function getAttackPower() {
-  return Math.floor(state.atk * (1 + getTechniqueBonus("atk") + getPetBonus("atk")));
+  return Math.floor(state.atk * (1 + getTechniqueBonus("atk") + getPetBonus("atk") + getDualResonanceBonus("atk")));
 }
 
 function getDefensePower() {
-  return Math.floor(state.def * (1 + getTechniqueBonus("def") + getPetBonus("def")));
+  return Math.floor(state.def * (1 + getTechniqueBonus("def") + getPetBonus("def") + getDualResonanceBonus("def")));
 }
 
 function getRealmDefenseGain(realm) {
@@ -619,6 +648,20 @@ function renderStats() {
   $("tribulationInfo").textContent = atFinalRealm ? "已達巔峰" : tribulationCount > 0 ? `${tribulationCount} 道天劫` : "一般突破";
   $("breakthroughBtn").textContent = atFinalRealm ? "已達目前最高境界" : tribulationCount > 0 ? `渡劫突破（${tribulationCount} 道）` : "嘗試突破";
   $("breakthroughBtn").disabled = breakthroughInProgress || atFinalRealm;
+  const activeDualPartner = partners.find((partner) => partner.name === state.activeDualPartner);
+  const absorbEffect = $("absorbEffect");
+  const cultivationImage = activeDualPartner
+    ? "assets/bai-xiaochun-zhou-zimo-cultivation.gif?v=20260730-6"
+    : "assets/cultivation.gif?v=20260730-6";
+  if (absorbEffect.getAttribute("src") !== cultivationImage) {
+    absorbEffect.src = cultivationImage;
+    absorbEffect.alt = activeDualPartner ? `白小純與${activeDualPartner.name}雙修動畫` : "天地吸收修為動畫";
+  }
+  $("activeDualBadge").classList.toggle("hidden", !activeDualPartner);
+  if (activeDualPartner) {
+    $("activeDualName").textContent = activeDualPartner.name;
+    $("activeDualRate").textContent = `修煉 +${Math.round(getDualResonanceBonus("rate") * 100)}%`;
+  }
   const activePet = pets.find((pet) => pet.name === state.activePet && getPetRecord(pet.name).owned);
   const stage = document.querySelector(".character-stage");
   stage?.classList.remove("pet-tiedan", "pet-turtle", "pet-dragon");
@@ -671,12 +714,18 @@ function renderPartners() {
     .map((partner) => {
       const affection = state.affection[partner.name] || 0;
       const used = state.dualUsed[partner.name] === todayKey();
+      const active = state.activeDualPartner === partner.name;
       const level = affection >= 1000 ? "道侶" : affection >= 600 ? "情愫" : affection >= 300 ? "信賴" : affection >= 100 ? "熟悉" : "相識";
+      const rateBonus = Math.round(getDualResonanceBonus("rate", partner.name) * 100);
+      const atkBonus = Math.round(getDualResonanceBonus("atk", partner.name) * 100);
+      const defBonus = Math.round(getDualResonanceBonus("def", partner.name) * 100);
+      const hpBonus = Math.round(getDualResonanceBonus("hp", partner.name) * 100);
       return `
-        <article class="item">
-          <div class="item-title"><span>${partner.name}</span><span>${level}</span></div>
+        <article class="item dual-partner-card ${active ? "active" : ""}">
+          <div class="item-title"><span>${partner.name}</span><span>${active ? "共鳴中" : level}</span></div>
           <p>親密度 ${affection}，特色：${partner.trait}</p>
-          <button data-action="dual" data-name="${partner.name}" ${used ? "disabled" : ""}>${used ? "今日已雙修" : "雙修一次"}</button>
+          <p class="dual-bonus">修煉 +${rateBonus}%・攻擊 +${atkBonus}%・防禦 +${defBonus}%・血量 +${hpBonus}%</p>
+          <button data-action="dual" data-name="${partner.name}" ${used ? "disabled" : ""}>${used ? active ? "今日已雙修・共鳴中" : "今日已雙修" : "開始雙修"}</button>
         </article>
       `;
     })
@@ -1094,23 +1143,19 @@ function dualCultivate(name) {
   const partner = partners.find((item) => item.name === name);
   if (!partner || state.dualUsed[name] === todayKey()) return;
   const dualBonus = getTechniqueBonus("dual");
-  const gain = Math.ceil(getRate() * 18 * (1 + (state.affection[name] || 0) / 1600) * (1 + dualBonus));
-  state.cultivation += gain;
+  const previousMaxHp = getMaxHp();
+  const hpRatio = previousMaxHp > 0 ? state.currentHp / previousMaxHp : 1;
   state.affection[name] = (state.affection[name] || 0) + Math.ceil(35 * (1 + dualBonus));
   state.dualUsed[name] = todayKey();
-  if (partner.stat === "luck") state.luck += partner.bonus;
-  if (partner.stat === "battle") {
-    state.atk += Math.ceil(state.atk * partner.bonus);
-    state.def += Math.ceil(state.def * partner.bonus);
-    const hpGain = Math.ceil(state.hp * partner.bonus);
-    state.hp += hpGain;
-    state.currentHp = Math.min(getMaxHp(), state.currentHp + hpGain);
-  }
-  playAbsorbEffect();
-  playActionEffect("dual-effect", 1600);
-  showFloat(`雙修 +${gain} 修為`);
+  state.activeDualPartner = name;
+  state.currentHp = Math.min(getMaxHp(), Math.ceil(getMaxHp() * hpRatio));
   saveState();
   render();
+  playActionEffect("dual-effect", 1600);
+  showFloat(`與${name}雙修共鳴，修煉與戰力提升`);
+  window.requestAnimationFrame(() => {
+    document.querySelector(".character-stage")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
 }
 
 async function breakthrough() {
