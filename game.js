@@ -97,6 +97,12 @@ const pets = [
     lore: "白小純以育獸種培育而生的王獸，不需契約便只認白小純為主，能震懾並統御其他戰獸。",
     atk: 0.08,
     def: 0.05,
+    skills: [
+      { name: "王獸威壓", type: "被動", unlockTier: 0, effect: "敵人攻擊降低 8%", enemyAtkReduction: 0.08 },
+      { name: "王獸血脈", type: "被動", unlockTier: 1, effect: "同行時攻擊額外 +6%", atk: 0.06 },
+      { name: "百獸之王", type: "被動", unlockTier: 2, effect: "同行時防禦額外 +8%", def: 0.08 },
+      { name: "王獸真身", type: "被動", unlockTier: 3, effect: "同行時攻擊額外 +12%", atk: 0.12 },
+    ],
   },
   {
     name: "小烏龜",
@@ -112,6 +118,10 @@ const pets = [
     rate: 0.04,
     luck: 2,
     alchemy: 0.03,
+    skills: [
+      { name: "尋寶", type: "被動", unlockTier: 2, effect: "稀有掉落率提高 35%", rareDrop: 0.35 },
+      { name: "趨吉避凶", type: "被動", unlockTier: 3, effect: "稀有掉落率再提高 25%、幸運 +3", rareDrop: 0.25, luck: 3 },
+    ],
   },
   {
     name: "天角墨龍",
@@ -127,6 +137,9 @@ const pets = [
     def: 0.1,
     hp: 0.08,
     tribulation: 0.02,
+    skills: [
+      { name: "墨龍守護", type: "被動", unlockTier: 3, effect: "每次渡劫抵擋一道天劫的全部傷害", tribulationShield: 1 },
+    ],
   },
 ];
 
@@ -280,13 +293,42 @@ function getPetBreakthroughChance() {
   return Math.min(85, Math.max(50, getSuccessRate() - 18));
 }
 
+function getRealmTierByIndex(realmIndex) {
+  if (realmIndex >= 18) return 3;
+  if (realmIndex >= 14) return 2;
+  if (realmIndex >= 10) return 1;
+  return 0;
+}
+
+function getUnlockedPetSkills(pet, record = getPetRecord(pet.name)) {
+  const tier = getRealmTierByIndex(record.realmIndex);
+  return (pet.skills || []).filter((skill) => tier >= skill.unlockTier);
+}
+
+function getActivePetSkillBonus(property) {
+  const pet = pets.find((item) => item.name === state.activePet);
+  if (!pet) return 0;
+  const record = getPetRecord(pet.name);
+  if (!record.owned) return 0;
+  return getUnlockedPetSkills(pet, record).reduce((total, skill) => total + (skill[property] || 0), 0);
+}
+
 function getPetBonus(property) {
   const pet = pets.find((item) => item.name === state.activePet);
   if (!pet || state.realmIndex < pet.unlock) return 0;
   const record = getPetRecord(pet.name);
   if (!record.owned) return 0;
   const realmSteps = Math.max(0, record.realmIndex - pet.initialRealm);
-  return (pet[property] || 0) * record.level * (1 + realmSteps * 0.05);
+  const trainedBonus = (pet[property] || 0) * record.level * (1 + realmSteps * 0.05);
+  return trainedBonus + getActivePetSkillBonus(property);
+}
+
+function getEnemyAttackReduction() {
+  return Math.min(0.6, getActivePetSkillBonus("enemyAtkReduction"));
+}
+
+function getRareDropBonus() {
+  return getActivePetSkillBonus("rareDrop");
 }
 
 function getEffectiveLuck() {
@@ -340,6 +382,7 @@ function wait(ms) {
 
 async function runTribulation(count) {
   const scene = $("tribulationScene");
+  let guardianShields = getActivePetSkillBonus("tribulationShield");
   scene.classList.add("active");
   $("tribulationTitle").textContent = `${count} 道天劫降臨`;
 
@@ -349,6 +392,14 @@ async function runTribulation(count) {
     void scene.offsetWidth;
     scene.classList.add("strike");
     await wait(260);
+    if (guardianShields > 0) {
+      guardianShields -= 1;
+      playActionEffect("pet-effect", 1200);
+      $("tribulationProgress").textContent = `第 ${strike} / ${count} 道・墨龍守護抵擋`;
+      showFloat("墨龍守護，完全抵擋此道天劫");
+      await wait(620);
+      continue;
+    }
     const difficultyDamage = state.difficulty === "easy" ? 0.82 : state.difficulty === "hard" ? 1.15 : 1;
     const damageRate = 0.14 + count * 0.025 + (strike - 1) * 0.02;
     const damage = Math.max(1, Math.ceil(getMaxHp() * damageRate * difficultyDamage * (1 - getTribulationReduction())));
@@ -499,8 +550,10 @@ function renderStats() {
     activePetSprite.alt = "";
   }
   if (activePet) {
+    const activeSkills = getUnlockedPetSkills(activePet);
     $("activePetSigil").textContent = activePet.sigil;
     $("activePetName").textContent = activePet.name;
+    $("activePetSkill").textContent = activeSkills[0]?.name || "同行靈寵";
   }
 }
 
@@ -574,6 +627,17 @@ function renderPets() {
     const waitingForPlayer = record.realmIndex >= state.realmIndex;
     const canBreakthrough = record.owned && !petRealmMaxed && !waitingForPlayer;
     const realmBonus = Math.max(0, record.realmIndex - pet.initialRealm) * 5;
+    const petTier = getRealmTierByIndex(record.realmIndex);
+    const skillList = (pet.skills || []).map((skill) => {
+      const skillUnlocked = record.owned && petTier >= skill.unlockTier;
+      const unlockRealm = ["凝氣", "築基", "結丹", "元嬰"][skill.unlockTier] || "後續境界";
+      return `
+        <li class="${skillUnlocked ? "unlocked" : "locked"}">
+          <span>${skill.name}<small>${skill.type}</small></span>
+          <em>${skillUnlocked ? skill.effect : `${unlockRealm}解鎖`}</em>
+        </li>
+      `;
+    }).join("");
     return `
       <article class="item pet-card ${unlocked ? "" : "locked"} ${active ? "active" : ""}">
         <div class="pet-heading">
@@ -587,6 +651,7 @@ function renderPets() {
             <p>${pet.effect}</p>
           </div>
         </div>
+        <ul class="pet-skill-list" aria-label="${pet.name}技能">${skillList}</ul>
         <div class="pet-actions">
           ${
             !unlocked
@@ -633,6 +698,12 @@ function renderGuide(tab = activeGuideTab) {
     $("guideContent").innerHTML = pets.map((pet) => {
       const unlocked = state.realmIndex >= pet.unlock;
       const record = getPetRecord(pet.name);
+      const petTier = getRealmTierByIndex(record.realmIndex);
+      const skills = (pet.skills || []).map((skill) => {
+        const skillUnlocked = record.owned && petTier >= skill.unlockTier;
+        const unlockRealm = ["凝氣", "築基", "結丹", "元嬰"][skill.unlockTier] || "後續境界";
+        return `${skillUnlocked ? "已解鎖" : `${unlockRealm}解鎖`}｜${skill.name}（${skill.type}）：${skill.effect}`;
+      }).join("<br>");
       return `
         <article class="guide-entry ${unlocked ? "" : "locked"}">
           <header>
@@ -642,6 +713,7 @@ function renderGuide(tab = activeGuideTab) {
           <p>${pet.lore}</p>
           <div class="guide-meta">
             <span><b>同行效果</b>${pet.effect}</span>
+            <span><b>靈寵技能</b>${skills}</span>
             <span><b>初始境界</b>${getPetRealmName(pet, { realmIndex: pet.initialRealm })}</span>
             <span><b>突破規則</b>成本為人物同階 3 倍，成功率 ${getPetBreakthroughChance()}%，且不能超過人物境界</span>
             <span><b>締結消耗</b>${pet.bondCost.toLocaleString()} 修為</span>
@@ -770,11 +842,20 @@ function breakthroughPet(name) {
   const oldMaxHp = getMaxHp();
   const chance = getPetBreakthroughChance();
   if (Math.random() * 100 < chance) {
+    const oldTier = getRealmTierByIndex(record.realmIndex);
     state.cultivation -= cost;
     record.realmIndex += 1;
     state.pets[name] = record;
     state.currentHp = Math.min(getMaxHp(), state.currentHp + Math.max(0, getMaxHp() - oldMaxHp));
-    showFloat(`${name} 突破至 ${getPetRealmName(pet, record)}`);
+    const newTier = getRealmTierByIndex(record.realmIndex);
+    const unlockedSkills = newTier > oldTier
+      ? (pet.skills || []).filter((skill) => skill.unlockTier === newTier)
+      : [];
+    showFloat(
+      unlockedSkills.length
+        ? `${name} 突破至 ${getPetRealmName(pet, record)}，解鎖 ${unlockedSkills.map((skill) => skill.name).join("、")}`
+        : `${name} 突破至 ${getPetRealmName(pet, record)}`
+    );
   } else {
     const lost = Math.ceil(cost * 0.25);
     state.cultivation -= lost;
@@ -797,6 +878,17 @@ function activatePet(name) {
   showFloat(`${name} 開始同行`);
   saveState();
   render();
+}
+
+function tryRareTreasureDrop() {
+  const unlockedRecipes = recipes.filter((recipe) => state.realmIndex >= recipe.unlock);
+  if (!unlockedRecipes.length) return false;
+  const baseChance = 0.0012;
+  if (Math.random() >= baseChance * (1 + getRareDropBonus())) return false;
+  const recipe = unlockedRecipes[Math.floor(Math.random() * unlockedRecipes.length)];
+  state.inventory[recipe.name] = (state.inventory[recipe.name] || 0) + 1;
+  showFloat(`修煉奇遇：尋得 ${recipe.name} x1`);
+  return true;
 }
 
 function upgradeTechnique(name) {
@@ -995,7 +1087,12 @@ saveState();
 setInterval(() => {
   state.cultivation += getRate() / 12;
   state.currentHp = Math.min(getMaxHp(), state.currentHp + getMaxHp() / 120);
+  const foundTreasure = tryRareTreasureDrop();
   playAbsorbEffect();
   saveState();
   renderStats();
+  if (foundTreasure) {
+    renderPills();
+    renderBag();
+  }
 }, 5000);
