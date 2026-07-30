@@ -895,15 +895,24 @@ body {
 
 .pet-heading {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-columns: 70px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
+}
+
+.pet-avatar {
+  display: block;
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 10, 14, 0.35));
 }
 
 .pet-sigil {
   display: grid;
   width: 46px;
   height: 46px;
+  justify-self: center;
   place-items: center;
   border: 1px solid rgba(235, 208, 136, 0.56);
   border-radius: 50%;
@@ -913,6 +922,18 @@ body {
   background:
     radial-gradient(circle at 35% 28%, #f3e3a9, #69d3c6 58%, #19545a 60%);
   box-shadow: 0 0 16px rgba(89, 214, 201, 0.18);
+}
+
+.active-pet-sprite {
+  pointer-events: none;
+  position: absolute;
+  right: clamp(8px, 3vw, 42px);
+  bottom: 62px;
+  z-index: 6;
+  width: clamp(118px, 25%, 184px);
+  max-height: 42%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(0, 12, 16, 0.45));
 }
 
 .pet-actions {
@@ -990,6 +1011,13 @@ body {
   .active-pet-badge {
     right: 8px;
     bottom: 8px;
+  }
+
+  .active-pet-sprite {
+    right: 2px;
+    bottom: 54px;
+    width: clamp(106px, 35vw, 150px);
+    max-height: 36%;
   }
 }
 

@@ -86,6 +86,7 @@ const pets = [
   {
     name: "鐵蛋",
     sigil: "王",
+    image: "assets/tiedan.gif",
     role: "王獸戰寵",
     unlock: 10,
     initialRealm: 0,
@@ -487,6 +488,16 @@ function renderStats() {
   $("breakthroughBtn").disabled = breakthroughInProgress || atFinalRealm;
   const activePet = pets.find((pet) => pet.name === state.activePet && getPetRecord(pet.name).owned);
   $("activePetBadge").classList.toggle("hidden", !activePet);
+  const activePetSprite = $("activePetSprite");
+  const activePetImage = activePet?.image || "";
+  activePetSprite.classList.toggle("hidden", !activePetImage);
+  if (activePetImage && activePetSprite.getAttribute("src") !== activePetImage) {
+    activePetSprite.src = activePetImage;
+    activePetSprite.alt = `${activePet.name}同行動畫`;
+  } else if (!activePetImage && activePetSprite.hasAttribute("src")) {
+    activePetSprite.removeAttribute("src");
+    activePetSprite.alt = "";
+  }
   if (activePet) {
     $("activePetSigil").textContent = activePet.sigil;
     $("activePetName").textContent = activePet.name;
@@ -566,7 +577,10 @@ function renderPets() {
     return `
       <article class="item pet-card ${unlocked ? "" : "locked"} ${active ? "active" : ""}">
         <div class="pet-heading">
-          <span class="pet-sigil" aria-hidden="true">${pet.sigil}</span>
+          ${pet.image
+            ? `<img class="pet-avatar" src="${pet.image}" alt="${pet.name}動態圖">`
+            : `<span class="pet-sigil" aria-hidden="true">${pet.sigil}</span>`
+          }
           <div>
             <div class="item-title"><span>${pet.name}</span><span>${record.owned ? `${record.level} / ${pet.maxLevel} 級` : pet.role}</span></div>
             <p>境界：${getPetRealmName(pet, record)}${realmBonus > 0 ? `・同行效果 +${realmBonus}%` : ""}</p>
