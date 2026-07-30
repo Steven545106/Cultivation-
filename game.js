@@ -7,6 +7,8 @@ const difficulties = {
   hard: { label: "困難", rate: 1, cost: 1, bonus: 0 },
 };
 
+const realmTierNames = ["凝氣", "築基", "結丹", "元嬰", "天人", "半神", "天尊", "太古", "主宰", "永恆"];
+
 const realms = [
   { name: "凝氣一層", need: 120, material: "", qty: 0, atk: 2, hp: 15 },
   { name: "凝氣二層", need: 180, material: "小靈丹", qty: 1, atk: 2, hp: 16 },
@@ -21,13 +23,39 @@ const realms = [
   { name: "築基初期", need: 2600, material: "穩基丹", qty: 1, atk: 10, hp: 55 },
   { name: "築基中期", need: 3400, material: "穩基丹", qty: 1, atk: 11, hp: 60 },
   { name: "築基後期", need: 4400, material: "地脈丹", qty: 1, atk: 12, hp: 68 },
-  { name: "築基大圓滿", need: 5600, material: "地脈丹", qty: 2, atk: 14, hp: 78 },
+  { name: "築基大圓滿", need: 5600, material: "結丹丹", qty: 1, atk: 14, hp: 78 },
   { name: "結丹初期", need: 7200, material: "結丹丹", qty: 1, atk: 18, hp: 95 },
   { name: "結丹中期", need: 9200, material: "結丹丹", qty: 1, atk: 20, hp: 105 },
   { name: "結丹後期", need: 11800, material: "同心丹", qty: 1, atk: 23, hp: 118 },
   { name: "結丹大圓滿", need: 15000, material: "元嬰丹", qty: 1, atk: 28, hp: 140 },
   { name: "元嬰初期", need: 22000, material: "元嬰丹", qty: 2, atk: 36, hp: 180 },
+  { name: "元嬰中期", need: 28600, material: "元嬰丹", qty: 2, atk: 42, hp: 210 },
+  { name: "元嬰後期", need: 37200, material: "元嬰丹", qty: 3, atk: 49, hp: 245 },
+  { name: "元嬰大圓滿", need: 48400, material: "天人丹", qty: 1, atk: 58, hp: 285 },
 ];
+
+function appendRealmGroup(name, baseNeed, material, nextMaterial, baseAtk, baseHp) {
+  const stages = ["初期", "中期", "後期", "大圓滿"];
+  const multipliers = [1, 1.3, 1.69, 2.2];
+  stages.forEach((stage, index) => {
+    const isFinalStage = index === stages.length - 1;
+    realms.push({
+      name: `${name}${stage}`,
+      need: Math.round(baseNeed * multipliers[index] / 100) * 100,
+      material: isFinalStage ? nextMaterial : material,
+      qty: isFinalStage ? (nextMaterial ? 1 : 0) : index === 0 ? 1 : 2,
+      atk: Math.round(baseAtk * (1 + index * 0.18)),
+      hp: Math.round(baseHp * (1 + index * 0.2)),
+    });
+  });
+}
+
+appendRealmGroup("天人", 63000, "天人丹", "半神丹", 72, 350);
+appendRealmGroup("半神", 139000, "半神丹", "天尊丹", 128, 620);
+appendRealmGroup("天尊", 307000, "天尊丹", "太古丹", 225, 1080);
+appendRealmGroup("太古", 676000, "太古丹", "主宰丹", 395, 1880);
+appendRealmGroup("主宰", 1488000, "主宰丹", "永恆丹", 690, 3260);
+appendRealmGroup("永恆", 3274000, "永恆丹", "", 1200, 5660);
 
 const recipes = [
   { name: "小靈丹", effect: "立即增加修為", value: 180, cost: 60, unlock: 0 },
@@ -41,6 +69,12 @@ const recipes = [
   { name: "結丹丹", effect: "結丹突破材料", itemOnly: true, cost: 880, unlock: 14 },
   { name: "同心丹", effect: "雙修親密度 +20", affection: 20, cost: 980, unlock: 15 },
   { name: "元嬰丹", effect: "元嬰突破材料", itemOnly: true, cost: 1250, unlock: 17 },
+  { name: "天人丹", effect: "天人境突破材料", itemOnly: true, cost: 3600, unlock: 20 },
+  { name: "半神丹", effect: "半神境突破材料", itemOnly: true, cost: 9200, unlock: 24 },
+  { name: "天尊丹", effect: "天尊境突破材料", itemOnly: true, cost: 24000, unlock: 28 },
+  { name: "太古丹", effect: "太古境突破材料", itemOnly: true, cost: 62000, unlock: 32 },
+  { name: "主宰丹", effect: "主宰境突破材料", itemOnly: true, cost: 160000, unlock: 36 },
+  { name: "永恆丹", effect: "永恆境突破材料", itemOnly: true, cost: 420000, unlock: 40 },
 ];
 
 const partners = [
@@ -102,6 +136,12 @@ const pets = [
       { name: "王獸血脈", type: "被動", unlockTier: 1, effect: "同行時攻擊額外 +6%", atk: 0.06 },
       { name: "百獸之王", type: "被動", unlockTier: 2, effect: "同行時防禦額外 +8%", def: 0.08 },
       { name: "王獸真身", type: "被動", unlockTier: 3, effect: "同行時攻擊額外 +12%", atk: 0.12 },
+      { name: "王者咆哮", type: "被動", unlockTier: 4, effect: "敵人攻擊再降低 5%", enemyAtkReduction: 0.05 },
+      { name: "王獸戰甲", type: "被動", unlockTier: 5, effect: "同行時防禦額外 +12%", def: 0.12 },
+      { name: "血脈返祖", type: "被動", unlockTier: 6, effect: "同行時攻擊額外 +16%", atk: 0.16 },
+      { name: "萬獸朝拜", type: "被動", unlockTier: 7, effect: "修為速度額外 +10%", rate: 0.1 },
+      { name: "獸王領域", type: "被動", unlockTier: 8, effect: "敵人攻擊再降低 7%", enemyAtkReduction: 0.07 },
+      { name: "永恆王獸", type: "被動", unlockTier: 9, effect: "攻擊 +25%、血量上限 +20%", atk: 0.25, hp: 0.2 },
     ],
   },
   {
@@ -121,6 +161,12 @@ const pets = [
     skills: [
       { name: "尋寶", type: "被動", unlockTier: 2, effect: "稀有掉落率提高 35%", rareDrop: 0.35 },
       { name: "趨吉避凶", type: "被動", unlockTier: 3, effect: "稀有掉落率再提高 25%、幸運 +3", rareDrop: 0.25, luck: 3 },
+      { name: "靈寶感應", type: "被動", unlockTier: 4, effect: "稀有掉落率再提高 30%", rareDrop: 0.3 },
+      { name: "福禍相依", type: "被動", unlockTier: 5, effect: "幸運 +4、突破率 +2%", luck: 4, success: 2 },
+      { name: "尋天機", type: "被動", unlockTier: 6, effect: "稀有掉落率再提高 35%", rareDrop: 0.35 },
+      { name: "龜甲不滅", type: "被動", unlockTier: 7, effect: "血量上限 +10%、天劫傷害 -5%", hp: 0.1, tribulation: 0.05 },
+      { name: "命運指引", type: "被動", unlockTier: 8, effect: "突破率 +4%、幸運 +5", success: 4, luck: 5 },
+      { name: "永恆寶運", type: "被動", unlockTier: 9, effect: "稀有掉落率再提高 50%、幸運 +8", rareDrop: 0.5, luck: 8 },
     ],
   },
   {
@@ -139,6 +185,12 @@ const pets = [
     tribulation: 0.02,
     skills: [
       { name: "墨龍守護", type: "被動", unlockTier: 3, effect: "每次渡劫抵擋一道天劫的全部傷害", tribulationShield: 1 },
+      { name: "墨海護體", type: "被動", unlockTier: 4, effect: "防禦額外 +12%", def: 0.12 },
+      { name: "龍魂鎮守", type: "被動", unlockTier: 5, effect: "血量上限額外 +15%", hp: 0.15 },
+      { name: "天角破界", type: "被動", unlockTier: 6, effect: "攻擊額外 +15%", atk: 0.15 },
+      { name: "墨海領域", type: "被動", unlockTier: 7, effect: "天劫傷害再降低 8%", tribulation: 0.08 },
+      { name: "祖龍之息", type: "被動", unlockTier: 8, effect: "修為速度 +12%、防禦 +15%", rate: 0.12, def: 0.15 },
+      { name: "永恆龍魂", type: "被動", unlockTier: 9, effect: "渡劫再抵擋一道傷害、防禦 +20%", tribulationShield: 1, def: 0.2 },
     ],
   },
 ];
@@ -155,6 +207,12 @@ const recipeNotes = {
   "結丹丹": "協助靈力凝結成丹的珍貴丹藥，作為結丹階段的突破材料。",
   "同心丹": "調和雙方靈力與心境，服用後提升目前已相識道侶的親密度。",
   "元嬰丹": "凝鍊元嬰所需的高階丹藥，是衝擊元嬰境界的重要突破材料。",
+  "天人丹": "溝通天地意志、引動天人之力，是元嬰大圓滿突破天人境的必要材料。",
+  "半神丹": "凝聚念根並穩固神魂，供天人大圓滿衝擊半神境使用。",
+  "天尊丹": "將念根蛻變為道種，協助半神大圓滿踏入天尊境。",
+  "太古丹": "滋養道種並凝聚道意之花，是天尊大圓滿突破太古境的材料。",
+  "主宰丹": "承載世界本源與意志認可，供太古大圓滿衝擊主宰境。",
+  "永恆丹": "凝聚永恆本源的最高階丹藥，是主宰大圓滿邁向永恆境的關鍵。",
 };
 
 let state = loadState();
@@ -245,7 +303,13 @@ function getRate() {
   }, 0);
   const techniqueRate = getTechniqueBonus("rate");
   const petRate = getPetBonus("rate");
-  return Math.ceil((24 + state.realmIndex * 9 + getEffectiveLuck() * 0.8) * difficulty * (1 + partnerRate + techniqueRate + petRate));
+  const lateRealmAcceleration = state.realmIndex > 18 ? Math.pow(1.18, state.realmIndex - 18) : 1;
+  return Math.ceil(
+    (24 + state.realmIndex * 9 + getEffectiveLuck() * 0.8)
+    * difficulty
+    * (1 + partnerRate + techniqueRate + petRate)
+    * lateRealmAcceleration
+  );
 }
 
 function getSuccessRate() {
@@ -255,7 +319,7 @@ function getSuccessRate() {
     const affection = state.affection[partner.name] || 0;
     return sum + (partner.stat === "break" && affection >= 100 ? partner.bonus : 0);
   }, 0);
-  return Math.min(98, 55 + difficultyBonus + luckBonus + partnerBonus + getTechniqueBonus("success"));
+  return Math.min(98, 55 + difficultyBonus + luckBonus + partnerBonus + getTechniqueBonus("success") + getPetBonus("success"));
 }
 
 function getTechniqueLevel(name) {
@@ -294,6 +358,12 @@ function getPetBreakthroughChance() {
 }
 
 function getRealmTierByIndex(realmIndex) {
+  if (realmIndex >= 42) return 9;
+  if (realmIndex >= 38) return 8;
+  if (realmIndex >= 34) return 7;
+  if (realmIndex >= 30) return 6;
+  if (realmIndex >= 26) return 5;
+  if (realmIndex >= 22) return 4;
   if (realmIndex >= 18) return 3;
   if (realmIndex >= 14) return 2;
   if (realmIndex >= 10) return 1;
@@ -363,16 +433,14 @@ function getTechniqueCost(technique) {
 }
 
 function getRealmTier(name) {
-  if (name.startsWith("元嬰")) return 3;
-  if (name.startsWith("結丹")) return 2;
-  if (name.startsWith("築基")) return 1;
-  return 0;
+  const tier = realmTierNames.findIndex((realmName) => name.startsWith(realmName));
+  return Math.max(0, tier);
 }
 
 function getTribulationCount() {
   if (state.realmIndex >= realms.length - 1) return 0;
-  const currentTier = getRealmTier(getRealm().name);
-  const nextTier = getRealmTier(realms[state.realmIndex + 1].name);
+  const currentTier = getRealmTierByIndex(state.realmIndex);
+  const nextTier = getRealmTierByIndex(state.realmIndex + 1);
   return nextTier > currentTier ? nextTier : 0;
 }
 
@@ -654,7 +722,7 @@ function renderPets() {
     const petTier = getRealmTierByIndex(record.realmIndex);
     const skillList = (pet.skills || []).map((skill) => {
       const skillUnlocked = record.owned && petTier >= skill.unlockTier;
-      const unlockRealm = ["凝氣", "築基", "結丹", "元嬰"][skill.unlockTier] || "後續境界";
+      const unlockRealm = realmTierNames[skill.unlockTier] || "後續境界";
       return `
         <li class="${skillUnlocked ? "unlocked" : "locked"}">
           <span>${skill.name}<small>${skill.type}</small></span>
@@ -718,6 +786,32 @@ function renderGuide(tab = activeGuideTab) {
     button.setAttribute("aria-selected", String(active));
   });
 
+  if (tab === "realms") {
+    $("guideContent").innerHTML = realmTierNames.map((tierName, tier) => {
+      const tierRealms = realms
+        .map((realm, index) => ({ ...realm, index }))
+        .filter((realm) => getRealmTierByIndex(realm.index) === tier);
+      const reached = state.realmIndex >= tierRealms[0].index;
+      const current = tierRealms.some((realm) => realm.index === state.realmIndex);
+      const status = current ? "目前境界" : reached ? "已突破" : "尚未抵達";
+      return `
+        <article class="guide-entry realm-guide-entry ${current ? "current" : ""} ${reached ? "" : "locked"}">
+          <header>
+            <h3>${tierName}境</h3>
+            <span>${status}</span>
+          </header>
+          <p>${tierRealms.map((realm) => realm.name).join("・")}</p>
+          <div class="guide-meta">
+            <span><b>境界數量</b>${tierRealms.length} 階</span>
+            <span><b>跨境天劫</b>${tier === 0 ? "凝氣修行" : `${tier} 道天劫`}</span>
+            <span><b>最高需求</b>${tierRealms[tierRealms.length - 1].need.toLocaleString()} 基礎修為</span>
+          </div>
+        </article>
+      `;
+    }).join("");
+    return;
+  }
+
   if (tab === "pets") {
     $("guideContent").innerHTML = pets.map((pet) => {
       const unlocked = state.realmIndex >= pet.unlock;
@@ -725,7 +819,7 @@ function renderGuide(tab = activeGuideTab) {
       const petTier = getRealmTierByIndex(record.realmIndex);
       const skills = (pet.skills || []).map((skill) => {
         const skillUnlocked = record.owned && petTier >= skill.unlockTier;
-        const unlockRealm = ["凝氣", "築基", "結丹", "元嬰"][skill.unlockTier] || "後續境界";
+        const unlockRealm = realmTierNames[skill.unlockTier] || "後續境界";
         return `${skillUnlocked ? "已解鎖" : `${unlockRealm}解鎖`}｜${skill.name}（${skill.type}）：${skill.effect}`;
       }).join("<br>");
       return `

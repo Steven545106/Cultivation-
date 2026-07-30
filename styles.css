@@ -1588,6 +1588,18 @@ body {
   font-size: 11px;
 }
 
+.realm-guide-entry.current {
+  border-color: rgba(238, 204, 105, 0.72);
+  background:
+    linear-gradient(100deg, rgba(117, 96, 34, 0.3), transparent 58%),
+    rgba(12, 50, 55, 0.92);
+  box-shadow: inset 0 0 30px rgba(238, 204, 105, 0.08);
+}
+
+.realm-guide-entry.current header span {
+  color: #ffe59a;
+}
+
 .guide-entry.locked {
   opacity: 0.55;
   filter: saturate(0.55);
