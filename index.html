@@ -6,7 +6,7 @@
     <title>一念放置修仙</title>
     <link rel="preload" as="image" href="assets/breakthrough.gif">
     <link rel="preload" as="image" href="assets/tiedan.gif">
-    <link rel="stylesheet" href="styles.css?v=20260730-2">
+    <link rel="stylesheet" href="styles.css?v=20260730-3">
   </head>
   <body>
     <main class="game-shell">
@@ -102,6 +102,16 @@
             <img id="absorbEffect" class="absorb-effect" src="assets/cultivation.gif" alt="天地吸收修為動畫">
             <img id="activePetSprite" class="active-pet-sprite hidden" alt="">
             <div id="actionBurst" class="action-burst" aria-hidden="true"></div>
+            <div class="stage-motes" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div id="petSkillEffect" class="pet-skill-effect" aria-hidden="true">
+              <div class="pet-skill-wave"></div>
+              <strong id="petSkillEmblem">王</strong>
+              <div class="pet-skill-sparks">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+            </div>
             <div id="activePetBadge" class="active-pet-badge hidden">
               <span id="activePetSigil" aria-hidden="true">王</span>
               <div>
@@ -163,6 +173,6 @@
       </section>
     </main>
 
-    <script src="game.js?v=20260730-2"></script>
+    <script src="game.js?v=20260730-3"></script>
   </body>
 </html>

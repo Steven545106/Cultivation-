@@ -395,6 +395,7 @@ async function runTribulation(count) {
     if (guardianShields > 0) {
       guardianShields -= 1;
       playActionEffect("pet-effect", 1200);
+      playPetSkillEffect("guardian", "護", 1500);
       $("tribulationProgress").textContent = `第 ${strike} / ${count} 道・墨龍守護抵擋`;
       showFloat("墨龍守護，完全抵擋此道天劫");
       await wait(620);
@@ -476,6 +477,19 @@ function playImpactEffect() {
   playImpactEffect.timer = window.setTimeout(() => screen.classList.remove("impact"), 420);
 }
 
+function playPetSkillEffect(type, emblem, duration = 1400) {
+  const effect = $("petSkillEffect");
+  if (!effect) return;
+  $("petSkillEmblem").textContent = emblem;
+  effect.className = "pet-skill-effect";
+  void effect.offsetWidth;
+  effect.classList.add("show", type);
+  window.clearTimeout(playPetSkillEffect.timer);
+  playPetSkillEffect.timer = window.setTimeout(() => {
+    effect.className = "pet-skill-effect";
+  }, duration);
+}
+
 function playBreakthroughEffect() {
   const effect = $("breakthroughEffect");
   const image = effect?.querySelector("img");
@@ -538,6 +552,16 @@ function renderStats() {
   $("breakthroughBtn").textContent = atFinalRealm ? "已達目前最高境界" : tribulationCount > 0 ? `渡劫突破（${tribulationCount} 道）` : "嘗試突破";
   $("breakthroughBtn").disabled = breakthroughInProgress || atFinalRealm;
   const activePet = pets.find((pet) => pet.name === state.activePet && getPetRecord(pet.name).owned);
+  const stage = document.querySelector(".character-stage");
+  stage?.classList.remove("pet-tiedan", "pet-turtle", "pet-dragon");
+  if (activePet && stage) {
+    const petClass = {
+      "鐵蛋": "pet-tiedan",
+      "小烏龜": "pet-turtle",
+      "天角墨龍": "pet-dragon",
+    }[activePet.name];
+    if (petClass) stage.classList.add(petClass);
+  }
   $("activePetBadge").classList.toggle("hidden", !activePet);
   const activePetSprite = $("activePetSprite");
   const activePetImage = activePet?.image || "";
@@ -851,6 +875,7 @@ function breakthroughPet(name) {
     const unlockedSkills = newTier > oldTier
       ? (pet.skills || []).filter((skill) => skill.unlockTier === newTier)
       : [];
+    if (unlockedSkills.length) playPetSkillEffect("unlock", "悟", 1800);
     showFloat(
       unlockedSkills.length
         ? `${name} 突破至 ${getPetRealmName(pet, record)}，解鎖 ${unlockedSkills.map((skill) => skill.name).join("、")}`
@@ -875,6 +900,12 @@ function activatePet(name) {
   state.activePet = name;
   state.currentHp = Math.min(getMaxHp(), Math.ceil(getMaxHp() * hpRatio));
   playActionEffect("pet-effect", 1200);
+  const petEffect = {
+    "鐵蛋": ["pressure", "王"],
+    "小烏龜": ["treasure", "寶"],
+    "天角墨龍": ["guardian", "護"],
+  }[name] || ["unlock", pet.sigil];
+  playPetSkillEffect(petEffect[0], petEffect[1], 1500);
   showFloat(`${name} 開始同行`);
   saveState();
   render();
@@ -887,6 +918,7 @@ function tryRareTreasureDrop() {
   if (Math.random() >= baseChance * (1 + getRareDropBonus())) return false;
   const recipe = unlockedRecipes[Math.floor(Math.random() * unlockedRecipes.length)];
   state.inventory[recipe.name] = (state.inventory[recipe.name] || 0) + 1;
+  playPetSkillEffect("treasure", "寶", 1600);
   showFloat(`修煉奇遇：尋得 ${recipe.name} x1`);
   return true;
 }
